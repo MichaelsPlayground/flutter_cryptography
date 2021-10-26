@@ -168,6 +168,44 @@ class _MyHomePageState extends State<MyHomePage> {
     print('X25519 remote Shared secret: $remoteSecretBytesBase64');
   }
 
+  Future<void> _x25519KeyExchangeCpc() async {
+
+    // uses the fixed keys from Cross Platform Cryptography
+    // works !
+    // fixed keys
+    String aPrivateKeyBase64 = "yJIzp7IueQOu8l202fwI21/aNXUxXBcg3jJoLFJATlU=";
+    String bPublicKeyBase64 =  "jVSuHjVH47PMbMaAxL5ziBS9/Z0HQK6TJLw9X3Jw6yg=";
+
+    // received public key
+    String aPublicKeyBase64 =  "b+Z6ajj7wI6pKAK5N28Hzp0Lyhv2PvHofwGY3WSm7W0=";
+    // own private key
+    String bPrivateKeyBase64 = "yNmXR5tfBXA/uZjanND+IYgGXlrFnrdUiUXesI4fOlM=";
+
+    // generate the local keyPair
+    final algorithm = X25519();
+    final aPrivateKey = base64Decode(aPrivateKeyBase64);
+    final localKeyPair = await algorithm.newKeyPairFromSeed(aPrivateKey);
+
+    final bPrivateKey = base64Decode(bPrivateKeyBase64);
+    final remoteKeyPair = await algorithm.newKeyPairFromSeed(bPrivateKey);
+    final remotePublicKey = await remoteKeyPair.extractPublicKey();
+
+    // We can now calculate a shared 256-bit secret
+    final secretKey = await X25519().sharedSecretKey(keyPair: localKeyPair, remotePublicKey: remotePublicKey);
+
+    final secretBytes = await secretKey.extractBytes();
+    final secretBytesBase64 = base64Encode(secretBytes);
+    print('X25519 key exchange CPC');
+    print('X25519 local Shared secret CPC : $secretBytesBase64');
+
+    // now remote
+    final localPublicKey = await localKeyPair.extractPublicKey();
+    final remoteSecretKey = await X25519().sharedSecretKey(keyPair: remoteKeyPair, remotePublicKey: localPublicKey);
+    final remoteSecretBytes = await remoteSecretKey.extractBytes();
+    final remoteSecretBytesBase64 = base64Encode(remoteSecretBytes);
+    print('X25519 remote Shared secret CPC: $remoteSecretBytesBase64');
+  }
+
   Future<void> _runEd25519Signature() async {
     // The message that we will sign
     final message = <int>[1,2,3];
@@ -280,6 +318,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _runChacha();
           _runAesGcm256();
           _x25519KeyExchange();
+          _x25519KeyExchangeCpc();
           _runEd25519Signature();
           _runAes256CtrHmac();
         },
